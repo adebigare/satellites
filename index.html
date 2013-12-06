@@ -10,99 +10,68 @@
 				<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
 				<script type="text/javascript">
 				</script>
+        <style type="text/css">
+            .node {
+              stroke: #fff;
+              stroke-width: 1.5px;
+            }
+        </style>
 
     </head>
     <body>
 
     	<script type="text/javascript">
 
-    	//Width and height
-    	var w = 1200;
-    	var h = 600;
-    	var barPadding = 1;
-        var data;
-        var barWidth = Math.floor(w/19) - 1;
-        var margin = {top: 20, right: 40, bottom: 30, left: 20};
-        var xScale = d3.scale.ordinal()
-                        .rangeRoundBands([0,w]);
+    	////////////////////////////// D3 Chart ////////////////////////////
+        var width = 960,
+            height = 500;
 
+        var color = d3.scale.category20();
 
-        var yScale = d3.scale.linear()
-                        .range([h, 0])
+        var force = d3.layout.force()
+            .charge(-120)
+            .linkDistance(30)
+            .size([width, height]);
 
-        var yAxis = d3.svg.axis()
-                     .scale(yScale)
-                     .orient("right")
-                     .tickSize(-w)
-                     .tickFormat(function(d) { return Math.round(d / 1e6) + "M";})
+        var svg = d3.select("body").append("svg")
+            .attr("width", width)
+            .attr("height", height);
 
-
-
-    	//////////////////////////////// D3 Chart ////////////////////////////
+        var lines;
 
     	// Invoke the Data
-    	d3.csv ('contributions.csv', function(contributions) { 
+    	d3.csv ('Satellites.csv', function(error, satellites) { 
 
-            contributions.forEach(function(d) {
-                d.amount = +d.amount;
+            var satellites = d3.nest()
+                            .key(function(d) {return d.country_of_operator_owner})
+                            .key(function(d) {return d.users})
+                            .key(function(d) {return d.purpose})
+                            .rollup(function(v) {return v.map(function(d) {return d.class_of_orbit; }); })
 
+                            .entries(satellites);
+
+            force.nodes(satellites, function(d) {return d.country_of_operator_owner})
+            .start();
+
+
+            var node = svg.selectAll(".node")
+                        .data(satellites)
+                        .enter()
+                        .append("circle")
+                        .attr("class", "node")
+                        .attr("r", 5)
+                        .style("fill", color())
+                        .call(force.drag);
+
+            force.on("tick", function() {  
+              node.attr("cx", function(d) { return d.x; })
+                  .attr("cy", function(d) { return d.y; });
             });
 
-
-            // contributor0 = d3.min(data, function(d) {return d.amount});
-            // contributor1 = d3.max()
-            // x.domain ([])
-            yScale.domain([0, d3.max(contributions, function(d) { return d.amount;})]);
-
-
-    		//Build the svg canvas
-    		var svg = d3.select("body")
-    					.append("svg")
-    					.attr("width", w)
-    					.attr("height", h)
-                        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-    		//Make the bars
-    		svg.selectAll("rect")
-    		   .data(contributions, function(d){return d.amount;})
-    		   .enter()
-    		   .append("rect")
-    		   .attr("x", function(d,i){
-                    return i;
-               })
-    		   .attr("y", function(d,i) {
-    		   		return h - yScale(d.amount);
-    		   })
-    		   .attr("width", 20)
-    		   .attr("height", function(d) {
-    		   		return yScale(d.amount);
-    		   })
-    		   .attr("fill", "rgb(100)");
-
-    		//Add text labels
-    		// svg.selectAll("text")
-    		//    .data(dataset.contributor_name)
-    		//    .enter()
-    		//    .append("text")
-    		//    .text(function(d) {
-    		//    		return d;
-    		//    })
-    		//    .attr("text-anchor", "middle")
-    		//    .attr("x", function(d, i) {
-    		//    		return i * (w / dataset.contributor_name.length) + (w / dataset.contributor_name.length - barPadding) / 2;
-    		//    })
-    		//    .attr("y", function(d) {
-    		//    		return h - (d * 4) + 14;
-    		//    })
-    		//    .attr("font-family", "sans-serif")
-    		//    .attr("font-size", "11px")
-    		//    .attr("fill", "white");
-
-	  	})
+	  	});
 
 
     	</script>
 
-    	<!-- <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script> -->
-    </body>
+        </body>
 </html>
